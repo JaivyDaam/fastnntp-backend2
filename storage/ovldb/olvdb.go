@@ -21,9 +21,9 @@ SOFTWARE.
 */
 
 /*
-Stores overview data into a Berkeley DB database. See the ovdb(5) man page. 
+Stores overview data into a LevelDB database.
 */
-package timehash
+package ovldb
 
 import (
 	"github.com/syndtr/goleveldb/leveldb"
