@@ -31,6 +31,10 @@ import (
 	"io"
 	"time"
 	"errors"
+	
+	// Debug!
+	"fmt"
+	"strings"
 )
 
 var ENotInitialized = errors.New("SM not Initialized")
@@ -52,6 +56,12 @@ type TOKEN [34]byte
 func (t *TOKEN) Bytes() []byte { return t[2:] }
 func (t *TOKEN) Class() byte { return t[0] }
 func (t *TOKEN) reserved() byte { return t[1] }
+func (t *TOKEN) Debug() string {
+	s := fmt.Sprintf("(%d)-(%d)-%x",t[0],t[1],t[2:])
+	n := strings.TrimRight(s,"0-")
+	if n==s { return s }
+	return n+"::"
+}
 
 func Bzero(bs []byte) {
 	for i := range bs { bs[i] = 0 }
@@ -94,6 +104,9 @@ type OverviewElement struct{
 	Subject, From, Date, MsgId, Refs []byte
 	Lng, Lines int64
 }
+func (ove *OverviewElement) Debug() string {
+	return fmt.Sprintf("{%d %q %q %q %q %q %d %d}",ove.Num,ove.Subject,ove.From,ove.Date,ove.MsgId,ove.Refs,ove.Lng,ove.Lines)
+}
 
 type OverviewMethod interface {
 	FetchOne(grp []byte, num int64, tk *TOKEN, ove *OverviewElement) (rel Releaser,err error)
@@ -108,7 +121,7 @@ type GroupElement struct {
 	Description []byte
 }
 type GroupMethod interface {
-	FetchGroups(descr bool, ge *GroupElement) (cur Cursor,err error)
+	FetchGroups(status, descr bool, ge *GroupElement) (cur Cursor,err error)
 }
 
 type HisMethod interface {

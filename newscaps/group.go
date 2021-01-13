@@ -89,7 +89,7 @@ func (gr *GroupReader) ListGroups(wm *fastnntp.WildMat, ila fastnntp.IListActive
 	if active && gr.OV!=nil { return false }
 	
 	ge := new(storage.GroupElement)
-	cur,err := gr.GM.FetchGroups(descr,ge)
+	cur,err := gr.GM.FetchGroups(active,descr,ge)
 	if err!=nil { return false }
 	defer cur.Release()
 	
