@@ -86,7 +86,7 @@ func (gr *GroupReader) CursorMoveGroup(g *fastnntp.Group, i int64, backward bool
 var _ fastnntp.GroupListingCaps = (*GroupReader)(nil)
 func (gr *GroupReader) ListGroups(wm *fastnntp.WildMat, ila fastnntp.IListActive) bool {
 	active,descr := lam2bool(ila.GetListActiveMode())
-	if active && gr.OV!=nil { return false }
+	if active && gr.OV==nil { return false }
 	
 	ge := new(storage.GroupElement)
 	cur,err := gr.GM.FetchGroups(active,descr,ge)
