@@ -21,7 +21,7 @@ SOFTWARE.
 */
 
 /*
-Implements a traditional newsgroup-listing solution, based on the text files
+Implements a traditional newsgroup-listing solution. Based on the text files
 
 	active
 	newsgroups
