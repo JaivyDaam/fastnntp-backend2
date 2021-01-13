@@ -124,9 +124,14 @@ type GroupMethod interface {
 	FetchGroups(status, descr bool, ge *GroupElement) (cur Cursor,err error)
 }
 
+/*
+Inspired by INN's HIS(history) database.
+Maps message-ids to storage tokens.
+*/
 type HisMethod interface {
-	// HisWrite(msgid []byte,md *Article_MD, t *TOKEN) (err error)
+	HisWrite(msgid []byte,md *Article_MD, t *TOKEN) (err error)
 	HisLookup(msgid []byte, t *TOKEN) (err error)
+	HisCancel(msgid []byte) (err error)
 }
 
 
