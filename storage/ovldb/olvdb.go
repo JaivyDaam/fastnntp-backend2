@@ -27,6 +27,7 @@ package ovldb
 
 import (
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	
@@ -36,6 +37,7 @@ import (
 	"errors"
 	
 	"fmt"
+	"path/filepath"
 )
 
 func debug(i ...interface{}) { fmt.Println(i...) }
@@ -265,6 +267,16 @@ func (ov *OvLDB) GroupWrite(grp []byte, num int64, tk *storage.TOKEN, ove *stora
 
 func OpenOvLDB(path string) (*OvLDB,error) {
 	db,err := leveldb.OpenFile(path, nil)
+	if err!=nil { return nil,err }
+	return &OvLDB{
+		OvKeyFormat: i_ovkf1,
+		OvValFormat: i_ovvf1,
+		DB: db,
+	},nil
+}
+
+func OpenSpoolOvLDB(spool string, o *opt.Options) (*OvLDB,error) {
+	db,err := leveldb.OpenFile(filepath.Join(spool,"ovldb"), o)
 	if err!=nil { return nil,err }
 	return &OvLDB{
 		OvKeyFormat: i_ovkf1,
