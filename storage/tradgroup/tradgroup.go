@@ -51,7 +51,7 @@ var eNoDecompress = errors.New("decompression not supported")
 
 type TradGroup struct {
 	ConfigPath string // path to the folder containing "active" and "newsgroups"
-	Decompress string // must be "", "gz", or "bz2"
+	Decompress string // must be "", ".gz", or ".bz2"
 }
 
 var _ storage.GroupMethod = (*TradGroup)(nil)
@@ -109,7 +109,7 @@ func (tg *TradGroup) FetchGroups(status, descr bool, ge *storage.GroupElement) (
 	rd,err = tg.openHL(name)
 	if err!=nil { return }
 	
-	cur = &lister{ ge:ge, rd: rd, rb: bufio.NewReader(rd), descr: descr }
+	cur = &lister{ ge: ge, rd: rd, rb: bufio.NewReader(rd), descr: descr }
 	
 	return
 }
