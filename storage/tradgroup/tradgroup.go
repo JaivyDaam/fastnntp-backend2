@@ -40,6 +40,7 @@ import (
 	"io"
 	"bufio"
 	"regexp"
+	"fmt"
 )
 
 var line_active     = regexp.MustCompile(`^(\S+)\s+\S+\s+\S+\s+(.)`)
@@ -56,12 +57,12 @@ type TradGroup struct {
 var _ storage.GroupMethod = (*TradGroup)(nil)
 
 func (tg *TradGroup) openLL(name string) (io.ReadCloser,error) {
-	pth := filepath.Join(tg.ConfigPath)
+	pth := filepath.Join(tg.ConfigPath,name)
 	return os.Open(pth)
 }
 func (tg *TradGroup) openHL(name string) (io.ReadCloser,error) {
 	deco := decompress.Get(tg.Decompress)
-	if deco!=nil { return nil,eNoDecompress }
+	if deco==nil { return nil,fmt.Errorf("Decompression of format %q not supported!",tg.Decompress) }
 	r,err := tg.openLL(name+tg.Decompress)
 	if err==nil { r,err = deco(r) }
 	return r,err
@@ -86,7 +87,6 @@ restart:
 		if len(sm)==0 { goto restart } // Bad line! skip.
 		la.ge.Group = sm[1]
 		la.ge.Description = sm[2]
-		return false
 	} else {
 		sm := line_active.FindSubmatch(line)
 		if len(sm)==0 { goto restart } // Bad line! skip.
