@@ -97,7 +97,7 @@ func (gr *GroupReader) ListGroups(wm *fastnntp.WildMat, ila fastnntp.IListActive
 		for cur.Next() {
 			if wm!=nil && !wm.Match(ge.Group) { continue }
 			_,lo,hi,err := gr.OV.GroupStat(ge.Group)
-			if err!=nil { hi,lo = 0,1 }
+			if err!=nil { continue } /* GetGroup() would fail, so skip.! */
 			err = ila.WriteFullInfo(ge.Group,hi,lo,ge.Status,ge.Description)
 			if err!=nil { break } /* Network-IO-Error. */
 		}

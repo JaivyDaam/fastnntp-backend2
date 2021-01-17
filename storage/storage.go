@@ -113,6 +113,14 @@ type OverviewMethod interface {
 	FetchAll(grp []byte, num, lastnum int64, tk *TOKEN, ove *OverviewElement) (cur Cursor,err error)
 	SeekOne(grp []byte, num int64, back bool, tk *TOKEN, ove *OverviewElement) (rel Releaser,err error)
 	GroupStat(grp []byte) (num, low, high int64, err error)
+	
+	// Write methods:
+	
+	// Writes a new Overview line into the database.
+	GroupWriteOv(grp []byte, autonum bool, md *Article_MD, tk *TOKEN, ove *OverviewElement) (err error)
+	
+	// Initializes a group in the overview-database.
+	InitGroup(grp []byte) (err error)
 }
 
 type GroupElement struct {

@@ -32,6 +32,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	
 	"github.com/byte-mug/fastnntp-backend2/storage"
+	"github.com/byte-mug/fastnntp-backend2/utils/minihash"
+	"sync"
 	"encoding/binary"
 	"io"
 	"errors"
@@ -46,6 +48,10 @@ func debugf(f string, i ...interface{}) { fmt.Printf(f+"\n",i...) }
 var eRecShort = io.ErrUnexpectedEOF
 var eNoEnt = errors.New("No Entry")
 var bin = binary.BigEndian
+
+const m_locks_size = 1<<12
+const m_locks_mask = m_locks_size-1
+var m_locks [m_locks_size]sync.Mutex
 
 func tsplit(p []byte) ([]byte,[]byte) {
 	for i,b := range p {
@@ -174,6 +180,12 @@ func (ovf1) joinGstat(buf []byte, num, low, high int64) (rec []byte) {
 	return rec
 }
 
+func (ov *OvLDB) lock_group(grp []byte) func() {
+	l := &m_locks[minihash.HashBytes(grp)&m_locks_mask]
+	l.Lock()
+	return l.Unlock
+}
+
 
 func (ov *OvLDB) FetchOne(grp []byte, num int64, tk *storage.TOKEN, ove *storage.OverviewElement) (rel storage.Releaser,err error) {
 	var rid,rec []byte
@@ -255,12 +267,53 @@ func (ov *OvLDB) GroupStat(grp []byte) (num, low, high int64, err error) {
 	return ov.explodeGstat(rec)
 }
 
-
-// Experimental.
-func (ov *OvLDB) GroupWrite(grp []byte, num int64, tk *storage.TOKEN, ove *storage.OverviewElement) (err error) {
-	var rid,rec []byte
+func (ov *OvLDB) GroupWriteOv(grp []byte, autonum bool, md *storage.Article_MD, tk *storage.TOKEN, ove *storage.OverviewElement) (err error) {
+	defer ov.lock_group(grp)()
+	var mrid,mrec,rid,rec []byte
+	var num int64
+	
+	mrid = ov.gstatid(grp)
+	{
+		omrec,err1 := ov.DB.Get(mrid,nil)
+		if err1!=nil { return err1 }
+		anum,low,high,err1 := ov.explodeGstat(omrec)
+		if err1!=nil { return err1 }
+		anum++
+		if autonum {
+			high++
+			num = high
+			ove.Num = num
+		} else {
+			num = ove.Num
+			if high<num { high = num}
+		}
+		mrec = ov.joinGstat(make([]byte,32),anum,low,high)
+	}
+	
 	rid = ov.recid(grp,num)
+	ove.Num = num
 	rec = ov.joinRecord(make([]byte,0,1<<10),tk,ove)
+	
+	
+	bat := leveldb.MakeBatch(1<<10)
+	bat.Put(rid,rec)
+	bat.Put(mrid,mrec)
+	
+	err = ov.DB.Write(bat,nil)
+	return
+}
+
+func (ov *OvLDB) InitGroup(grp []byte) (err error) {
+	defer ov.lock_group(grp)()
+	rid := ov.gstatid(grp)
+	rec,err1 := ov.DB.Get(ov.gstatid(grp),nil)
+	num,low,high,err2 := ov.explodeGstat(rec)
+	
+	if err1!=nil || err2!=nil {
+		num,low,high = 0,1,0
+	}
+	rec = ov.joinGstat(make([]byte,32),num,low,high)
+	
 	return ov.DB.Put(rid,rec,nil)
 }
 
