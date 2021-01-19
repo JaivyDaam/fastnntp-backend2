@@ -116,7 +116,7 @@ func (ar *ArticleReader) GetArticle(a *fastnntp.Article, head, body bool) func(w
 func (ar *ArticleReader) WriteOverview(a *fastnntp.ArticleRange) func(w fastnntp.IOverview) {
 	pt := new(storage.TOKEN)
 	pove := new(storage.OverviewElement)
-	if a.HasId {
+	if a.HasId && false {
 		// TODO: we need a way to perform a lookup.
 		return nil
 	}

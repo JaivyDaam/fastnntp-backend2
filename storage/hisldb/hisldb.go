@@ -26,11 +26,12 @@ package hisldb
 
 import (
 	"github.com/syndtr/goleveldb/leveldb"
-	//"github.com/syndtr/goleveldb/leveldb/util"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 	//"github.com/syndtr/goleveldb/leveldb/iterator"
 	
 	"github.com/byte-mug/fastnntp-backend2/storage"
 	"errors"
+	"path/filepath"
 )
 
 var eTokenMismatch = errors.New("internal Error: Token mismatch.")
@@ -56,3 +57,10 @@ func (s *HisLdb) HisCancel(msgid []byte) (err error) {
 	return
 }
 
+func OpenSpoolHisLdb(spool string, o *opt.Options) (*HisLdb,error) {
+	db,err := leveldb.OpenFile(filepath.Join(spool,"hisldb"), o)
+	if err!=nil { return nil,err }
+	return &HisLdb{
+		DB: db,
+	},nil
+}

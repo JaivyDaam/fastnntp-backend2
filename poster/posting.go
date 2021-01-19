@@ -35,18 +35,17 @@ import (
 	
 	// Temp
 	"github.com/byte-mug/fastnntp-backend2/storage/ovldb"
+	"fmt"
 )
+
+func debug(i ...interface{}) {
+	fmt.Println(i...)
+}
 
 type OverviewMethodEx interface{
 	GroupWrite(grp []byte, num int64, tk *storage.TOKEN, ove *storage.OverviewElement) (err error)
 	InitGroup(grp []byte) (err error)
 }
-
-/*
-CheckPostId(id []byte) (wanted bool, possible bool)
-CheckPost() (possible bool)
-PerformPost(id []byte, r *DotReader) (rejected bool, failed bool)
-*/
 
 type noopstamp int
 func (noopstamp) GetId(id_buf []byte) []byte { return nil }
@@ -73,7 +72,7 @@ func (c *StorageWriter) article_md() *storage.Article_MD {
 }
 func (c *StorageWriter) findStorageClass(ngrps [][]byte, size int64) int {
 	for i,sm := range c.SM.Classes {
-		if sm!=nil { continue }
+		if sm==nil { continue }
 		return i
 	}
 	return -1
@@ -127,6 +126,8 @@ func (c *StorageWriter) PerformPost(id []byte, r *fastnntp.DotReader) (rejected 
 	
 	bb.WriteTo(ab)
 	
+	if c.HIS.HisLookup(hi.MessageId,tk)==nil { return true,false } /* Prevent Message-ID overwrites. */
+	
 	cls := c.findStorageClass(ngrps,ove.Lng)
 	if cls<0 { return false,true /* We didn't found a storage class: posting failed! */ }
 	
@@ -136,7 +137,7 @@ func (c *StorageWriter) PerformPost(id []byte, r *fastnntp.DotReader) (rejected 
 	err = c.SM.Classes[cls].Store(amd,ab,tk)
 	if err!=nil { return false,true /* Storing the article failed with some IO error. Fail. */ }
 	
-	err = c.HIS.HisWrite(id,amd,tk)
+	err = c.HIS.HisWrite(hi.MessageId,amd,tk)
 	if err!=nil { return false,true }
 	
 	// TODO: this code still needs some love...
