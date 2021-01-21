@@ -142,9 +142,40 @@ type HisMethod interface {
 	HisCancel(msgid []byte) (err error)
 }
 
+type CfgBaseInfo struct{
+	Spool      string `inn:"$spool"`
+}
+
+type CfgStorageMethod struct {
+	Method     string `inn:"$method"`
+	Class      int    `inn:"$class"`
+	Newsgroups string `inn:"$newsgroup"`
+	Size       int64  `inn:"$size"`
+	MaxSize    int64  `inn:"$max-size" json:"max-size"`
+	Options    string `inn:"$options"`
+	ExactMatch bool   `inn:"$exactmatch"`
+}
+
+type CfgStorage struct {
+	Methods []*CfgStorageMethod `inn:"@method"`
+}
 
 type StorageManager struct {
 	Classes [256]StorageMethod
+	Methods [256]*CfgStorageMethod
+	
+	/*
+	Used by the Posting backend.
+	Will hold *fastnntp.WildMat objects.
+	*/
+	Wildmat [256]interface{}
+}
+func (s *StorageManager) SetMethods(cfg *CfgStorage) {
+	for _,m := range cfg.Methods {
+		if m==nil { continue }
+		if m.Class<0 || m.Class>=256 { continue }
+		s.Methods[m.Class] = m
+	}
 }
 
 func (s *StorageManager) Retrieve(t *TOKEN, sl SMLevel) (a Article_R, rs SMLevel,err error) {
@@ -154,5 +185,21 @@ func (s *StorageManager) Retrieve(t *TOKEN, sl SMLevel) (a Article_R, rs SMLevel
 	return
 }
 
+type CfgStorageLoader func(cfg *CfgStorageMethod, bi *CfgBaseInfo) (StorageMethod,error)
 
+var storage_methods = make(map[string]CfgStorageLoader)
 
+func RegisterStorageLoader(name string, ldr CfgStorageLoader) {
+	storage_methods[name] = ldr
+}
+
+func (s *StorageManager) Open(bi *CfgBaseInfo) (err error) {
+	for i,smc := range s.Methods {
+		if smc==nil { continue }
+		smf := storage_methods[smc.Method]
+		if smf==nil { return fmt.Errorf("Unknown method %q",smc.Method) }
+		s.Classes[i],err = smf(smc,bi)
+		if err!=nil { return }
+	}
+	return
+}

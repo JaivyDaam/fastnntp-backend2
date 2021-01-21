@@ -73,6 +73,29 @@ func (c *StorageWriter) article_md() *storage.Article_MD {
 func (c *StorageWriter) findStorageClass(ngrps [][]byte, size int64) int {
 	for i,sm := range c.SM.Classes {
 		if sm==nil { continue }
+		mt := c.SM.Methods[i]
+		if mt!=nil {
+			if size < mt.Size { continue }
+			if size > mt.MaxSize && mt.MaxSize > 0 { continue }
+			if mt.Newsgroups!="" {
+				wm,_ := c.SM.Wildmat[i].(*fastnntp.WildMat)
+				if wm==nil {
+					wm = fastnntp.ParseWildMat(mt.Newsgroups)
+					if wm.Compile()!=nil { continue } /* We can't compile. Match failed! */
+					c.SM.Wildmat[i] = wm
+				}
+				fail,succ := false,false
+				for _,ngrp := range ngrps {
+					if wm.Match(ngrp) {
+						succ = true
+					} else {
+						fail = true
+					}
+				}
+				if !succ { continue } /* One must match! */
+				if mt.ExactMatch && fail { continue } /* All must match! */
+			}
+		}
 		return i
 	}
 	return -1

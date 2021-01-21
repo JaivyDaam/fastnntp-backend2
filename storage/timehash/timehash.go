@@ -127,3 +127,12 @@ type articleFile struct {
 func (a *articleFile) Release() { a.Close() }
 func (a *articleFile) WriteTo(w io.Writer) (n int64, err error) { return io.Copy(w,a.File) }
 
+
+func LoadSM(cfg *storage.CfgStorageMethod, bi *storage.CfgBaseInfo) (storage.StorageMethod,error) {
+	sm := &TimeHashSpool{SpoolPath:bi.Spool}
+	return sm,nil
+}
+
+func init() {
+	storage.RegisterStorageLoader("timehash",LoadSM)
+}
