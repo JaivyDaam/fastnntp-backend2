@@ -142,6 +142,25 @@ type HisMethod interface {
 	HisCancel(msgid []byte) (err error)
 }
 
+type RiElement struct{
+	Group []byte
+	Num   int64
+}
+
+/*
+Reverse Index. Maps message-ids to group/number-pairs.
+*/
+type RiMethod interface {
+	// Called for the first group/number-pair associated to the article
+	RiWrite(msgid []byte,md *Article_MD, rie *RiElement) (err error)
+	
+	// Called for the remaining group/number-pair associated to the article
+	RiWriteMore(msgid []byte,md *Article_MD, rie *RiElement) (err error)
+	
+	// Performs a reverse index lookup: message-id to the first group/number pair.
+	RiLookup(msgid []byte,rie *RiElement) (rel Releaser,err error)
+}
+
 type CfgBaseInfo struct{
 	Spool      string `inn:"$spool"`
 }

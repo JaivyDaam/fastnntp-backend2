@@ -63,6 +63,7 @@ type StorageWriter struct {
 	SM    *storage.StorageManager
 	OV    *ovldb.OvLDB
 	HIS   storage.HisMethod
+	RI    storage.RiMethod
 }
 
 func (c *StorageWriter) article_md() *storage.Article_MD {
@@ -163,9 +164,24 @@ func (c *StorageWriter) PerformPost(id []byte, r *fastnntp.DotReader) (rejected 
 	err = c.HIS.HisWrite(hi.MessageId,amd,tk)
 	if err!=nil { return false,true }
 	
-	// TODO: this code still needs some love...
+	first := true
+	ri := c.RI
+	var rie *storage.RiElement
+	if ri!=nil { rie = new(storage.RiElement) }
+	
 	for _,ngrp := range ngrps {
 		err = c.OV.GroupWriteOv(ngrp,true,amd,tk,ove)
+		
+		if ri==nil { continue } /* Short cut, if ri==nil, we don't need the further code. */
+		
+		rie.Group = ngrp
+		rie.Num   = ove.Num
+		if first {
+			err = ri.RiWrite(hi.MessageId,amd,rie)
+		} else {
+			err = ri.RiWriteMore(hi.MessageId,amd,rie)
+		}
+		first = false
 	}
 	
 	/* Success! */

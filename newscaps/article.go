@@ -34,6 +34,7 @@ type ArticleReader struct {
 	SM *storage.StorageManager
 	OV storage.OverviewMethod
 	HIS storage.HisMethod
+	RI  storage.RiMethod
 }
 
 var _ fastnntp.ArticleCaps = (*ArticleReader)(nil)
@@ -116,9 +117,18 @@ func (ar *ArticleReader) GetArticle(a *fastnntp.Article, head, body bool) func(w
 func (ar *ArticleReader) WriteOverview(a *fastnntp.ArticleRange) func(w fastnntp.IOverview) {
 	pt := new(storage.TOKEN)
 	pove := new(storage.OverviewElement)
-	if a.HasId && false {
-		// TODO: we need a way to perform a lookup.
-		return nil
+	if a.HasId && ar.RI!=nil {
+		rie := new(storage.RiElement)
+		rel,err := ar.RI.RiLookup(a.MessageId,rie)
+		if err==nil {
+			defer rel.Release()
+			ar := new(fastnntp.ArticleRange)
+			*ar = *a
+			a = ar
+			a.HasNum = true
+			a.Group  = rie.Group
+			a.Number = rie.Num
+		}
 	}
 	if a.HasNum && ar.OV!=nil {
 		cur,err := ar.OV.FetchAll(a.Group,a.Number,a.LastNumber,pt,pove)
