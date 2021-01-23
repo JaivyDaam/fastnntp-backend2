@@ -339,3 +339,10 @@ func OpenSpoolOvLDB(spool string, o *opt.Options) (*OvLDB,error) {
 }
 
 
+func loader_ovldb(cfg *storage.CfgMaster) (storage.OverviewMethod,error) {
+	return OpenSpoolOvLDB(cfg.Spool,nil)
+}
+
+func init() {
+	storage.RegisterOverviewLoader("ovldb",loader_ovldb)
+}

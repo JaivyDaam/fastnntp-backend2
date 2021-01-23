@@ -64,3 +64,11 @@ func OpenSpoolHisLdb(spool string, o *opt.Options) (*HisLdb,error) {
 		DB: db,
 	},nil
 }
+
+func loader_hisldb(cfg *storage.CfgMaster) (storage.HisMethod,error) {
+	return OpenSpoolHisLdb(cfg.Spool,nil)
+}
+
+func init() {
+	storage.RegisterHisLoader("hisldb",loader_hisldb)
+}
