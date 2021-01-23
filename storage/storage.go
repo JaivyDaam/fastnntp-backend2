@@ -147,6 +147,15 @@ type RiElement struct{
 	Num   int64
 }
 
+type RiHistory struct{
+	// IF Group != nil THEN expire a group.
+	Group []byte
+	Num   int64
+	
+	// IF MessageID != nil THEN expire an article.
+	MessageId []byte
+}
+
 /*
 Reverse Index. Maps message-ids to group/number-pairs.
 */
@@ -159,6 +168,12 @@ type RiMethod interface {
 	
 	// Performs a reverse index lookup: message-id to the first group/number pair.
 	RiLookup(msgid []byte,rie *RiElement) (rel Releaser,err error)
+	
+	// Query Expired articles. SHOULD return message-ids after their group/number counterparts.
+	RiQueryExpired(ow *time.Time, rih *RiHistory) (cur Cursor, err error)
+	
+	// Expires an article using the message-id.
+	RiExpire(msgid []byte) (err error)
 }
 
 type CfgBaseInfo struct{
