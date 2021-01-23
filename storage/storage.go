@@ -180,6 +180,20 @@ type CfgBaseInfo struct{
 	Spool      string `inn:"$spool"`
 }
 
+/*
+General-Config.
+*/
+type CfgMaster struct{
+	OvMethod  string `inn:"$ovmethod"`
+	HisMethod string `inn:"$hismethod"`
+	Spool     string `inn:"$pathspool"`
+}
+func (cfg *CfgMaster) BaseInfo() *CfgBaseInfo {
+	return &CfgBaseInfo{
+		Spool: cfg.Spool,
+	}
+}
+
 type CfgStorageMethod struct {
 	Method     string `inn:"$method"`
 	Class      int    `inn:"$class"`
@@ -190,6 +204,9 @@ type CfgStorageMethod struct {
 	ExactMatch bool   `inn:"$exactmatch"`
 }
 
+/*
+Storage-Config.
+*/
 type CfgStorage struct {
 	Methods []*CfgStorageMethod `inn:"@method"`
 }
@@ -236,4 +253,32 @@ func (s *StorageManager) Open(bi *CfgBaseInfo) (err error) {
 		if err!=nil { return }
 	}
 	return
+}
+
+type CfgHisLoader func(cfg *CfgMaster) (HisMethod,error)
+
+var his_methods = make(map[string]CfgHisLoader)
+
+func RegisterHisLoader(name string, ldr CfgHisLoader) {
+	his_methods[name] = ldr
+}
+
+func OpenHisMethod(cfg *CfgMaster) (HisMethod, error) {
+	m := his_methods[cfg.HisMethod]
+	if m==nil { return nil,fmt.Errorf("Unknown his-method %q",cfg.HisMethod) }
+	return m(cfg)
+}
+
+type CfgOverviewLoader func(cfg *CfgMaster) (OverviewMethod,error)
+
+var overview_methods = make(map[string]CfgOverviewLoader)
+
+func RegisterOverviewLoader(name string, ldr CfgOverviewLoader) {
+	overview_methods[name] = ldr
+}
+
+func OpenOverviewMethod(cfg *CfgMaster) (OverviewMethod, error) {
+	m := overview_methods[cfg.OvMethod]
+	if m==nil { return nil,fmt.Errorf("Unknown overview-method %q",cfg.OvMethod) }
+	return m(cfg)
 }
