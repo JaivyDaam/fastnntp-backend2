@@ -126,6 +126,7 @@ func(r *RiLDB) RiLookup(msgid []byte,rie *storage.RiElement) (rel storage.Releas
 type cursor struct{
 	iter iterator.Iterator
 	rih  *storage.RiHistory
+	mdb  *leveldb.DB
 	next bool
 	buf  *bytes.Buffer
 	key  []byte
@@ -139,8 +140,9 @@ func (c *cursor) refill() (ok bool) {
 		c.next = true
 	}
 	if ok {
-		c.key = c.iter.Key()
-		c.buf = bytes.NewBuffer(c.iter.Value())
+		c.key = c.iter.Value()
+		val,_ := c.mdb.Get(c.key,nil)
+		c.buf = bytes.NewBuffer(val)
 	}
 	return
 }
@@ -181,7 +183,7 @@ func(r *RiLDB) RiQueryExpired(ow *time.Time, rih *storage.RiHistory) (cur storag
 	lid = append(lid,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff)
 	
 	iter := r.TDB.NewIterator(&util.Range{rid,lid},nil)
-	cur = &cursor{iter,rih,false,nil,nil}
+	cur = &cursor{iter,rih,r.MDB,false,nil,nil}
 	return
 }
 
