@@ -128,6 +128,7 @@ func (ar *ArticleReader) WriteOverview(a *fastnntp.ArticleRange) func(w fastnntp
 			a.HasNum = true
 			a.Group  = rie.Group
 			a.Number = rie.Num
+			a.LastNumber = rie.Num
 		}
 	}
 	if a.HasNum && ar.OV!=nil {

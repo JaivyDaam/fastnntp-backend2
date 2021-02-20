@@ -66,9 +66,12 @@ type StorageWriter struct {
 	RI    storage.RiMethod
 }
 
+const day = time.Hour*24
+
 func (c *StorageWriter) article_md() *storage.Article_MD {
 	a := new(storage.Article_MD)
 	a.Arrival = time.Now()
+	a.Expires = a.Arrival.Add(day) // TODO: make this configurable.
 	return a
 }
 func (c *StorageWriter) findStorageClass(ngrps [][]byte, size int64) int {

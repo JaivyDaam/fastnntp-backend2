@@ -88,6 +88,7 @@ type Article_R interface{
 
 type Article_MD struct{
 	Arrival time.Time
+	Expires time.Time
 }
 
 
