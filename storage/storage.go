@@ -187,6 +187,7 @@ General-Config.
 type CfgMaster struct{
 	OvMethod  string `inn:"$ovmethod"`
 	HisMethod string `inn:"$hismethod"`
+	RiMethod  string `inn:"$rimethod"`
 	Spool     string `inn:"$pathspool"`
 }
 func (cfg *CfgMaster) BaseInfo() *CfgBaseInfo {
@@ -283,3 +284,19 @@ func OpenOverviewMethod(cfg *CfgMaster) (OverviewMethod, error) {
 	if m==nil { return nil,fmt.Errorf("Unknown overview-method %q",cfg.OvMethod) }
 	return m(cfg)
 }
+
+type CfgRiLoader func(cfg *CfgMaster) (RiMethod,error)
+
+var ri_methods = make(map[string]CfgRiLoader)
+
+
+func RegisterRiLoader(name string, ldr CfgRiLoader) {
+	ri_methods[name] = ldr
+}
+
+func OpenRiMethod(cfg *CfgMaster) (RiMethod, error) {
+	m := ri_methods[cfg.RiMethod]
+	if m==nil { return nil,fmt.Errorf("Unknown overview-method %q",cfg.RiMethod) }
+	return m(cfg)
+}
+

@@ -228,9 +228,9 @@ func loader_rildb(cfg *storage.CfgMaster) (storage.RiMethod,error) {
 	return OpenSpoolRiLDB(cfg.Spool,nil)
 }
 
-/*
+
 func init() {
-	storage.RegisterOverviewLoader("ovldb",loader_ovldb)
+	storage.RegisterRiLoader("rildb",loader_rildb)
 }
-*/
+
 
