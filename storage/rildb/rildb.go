@@ -29,7 +29,7 @@ package rildb
 import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/syndtr/goleveldb/leveldb/util"
+	//"github.com/syndtr/goleveldb/leveldb/util"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	
 	"github.com/byte-mug/fastnntp-backend2/storage"
@@ -45,7 +45,7 @@ import (
 	"time"
 )
 
-const tfnano = "20060102150405.999999999"
+const tfnano = "20060102150405"
 
 type RiLDB struct{
 	MDB *leveldb.DB
@@ -130,16 +130,19 @@ type cursor struct{
 	next bool
 	buf  *bytes.Buffer
 	key  []byte
+	barrier []byte
 }
+
 func (c *cursor) Release() { c.iter.Release() }
 func (c *cursor) refill() (ok bool) {
 	if c.next {
-		ok = c.iter.Prev()
+		ok = c.iter.Next()
 	} else {
-		ok = c.iter.Last()
+		ok = c.iter.First()
 		c.next = true
 	}
 	if ok {
+		if string(c.iter.Key())>string(c.barrier) { return false }
 		c.key = c.iter.Value()
 		val,_ := c.mdb.Get(c.key,nil)
 		c.buf = bytes.NewBuffer(val)
@@ -177,19 +180,32 @@ func (c *cursor) Next() (ok bool) {
 
 // Query Expired articles. SHOULD return message-ids after their group/number counterparts.
 func(r *RiLDB) RiQueryExpired(ow *time.Time, rih *storage.RiHistory) (cur storage.Cursor, err error) {
-	rid := []byte{0,0,0,0}
 	lid := make([]byte,0,len(tfnano)+8)
 	lid = ow.AppendFormat(lid,tfnano)
 	lid = append(lid,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff)
 	
-	iter := r.TDB.NewIterator(&util.Range{rid,lid},nil)
-	cur = &cursor{iter,rih,r.MDB,false,nil,nil}
+	iter := r.TDB.NewIterator(nil,nil)
+	cur = &cursor{iter,rih,r.MDB,false,nil,nil,lid}
 	return
 }
 
 // Expires an article using the message-id.
 func(r *RiLDB) RiExpire(msgid []byte) (err error) {
-	return nil
+	var tsid []byte
+	
+	tsid,err = r.RDB.Get(msgid,nil)
+	if err!=nil { return }
+	
+	var err2,err3 error
+	
+	err = r.MDB.Delete(msgid,nil)
+	err2 = r.TDB.Delete(tsid,nil)
+	err3 = r.RDB.Delete(msgid,nil)
+	
+	if err==nil { err=err2 }
+	if err==nil { err=err3 }
+	
+	return
 }
 
 
