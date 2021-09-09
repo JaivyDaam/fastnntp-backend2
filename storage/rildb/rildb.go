@@ -54,8 +54,15 @@ type RiLDB struct{
 }
 
 
+type riLDBWriter struct{
+	*RiLDB
+	msgid []byte
+	buf *bytes.Buffer
+}
+
 // Called for the first group/number-pair associated to the article
-func(r *RiLDB) RiWrite(msgid []byte,md *storage.Article_MD, rie *storage.RiElement) (err error) {
+func(r *riLDBWriter) RiWrite(md *storage.Article_MD, rie *storage.RiElement) (err error) {
+	msgid := r.msgid
 	if !md.Expires.IsZero() {
 		ha := fnv.New64a()
 		ha.Write(msgid)
@@ -67,32 +74,30 @@ func(r *RiLDB) RiWrite(msgid []byte,md *storage.Article_MD, rie *storage.RiEleme
 		r.RDB.Put(msgid,tn,nil)
 		if err!=nil { return }
 	}
-	
-	buf := new(bytes.Buffer)
-	
-	fmt.Fprintln(buf,string(rie.Group),rie.Num)
-	
-	err = r.MDB.Put(msgid,buf.Bytes(),nil)
-	
+	fmt.Fprintln(r.buf,string(rie.Group),rie.Num)
 	return
 }
 
 // Called for the remaining group/number-pair associated to the article
-func(r *RiLDB) RiWriteMore(msgid []byte,md *storage.Article_MD, rie *storage.RiElement) (err error) {
-	var rec []byte
-	
-	rec,err = r.MDB.Get(msgid,nil)
-	
-	if err!=nil { return }
-	
-	buf := bytes.NewBuffer(rec)
-	
-	fmt.Fprintln(buf,string(rie.Group),rie.Num)
-	
-	err = r.MDB.Put(msgid,buf.Bytes(),nil)
-	
+func(r *riLDBWriter) RiWriteMore(md *storage.Article_MD, rie *storage.RiElement) (err error) {
+	fmt.Fprintln(r.buf,string(rie.Group),rie.Num)
 	return
 }
+
+// Called at after all group/number-pair have been associated.
+func(r *riLDBWriter) RiCommit() (err error) {
+	msgid, buf := r.msgid, r.buf
+	
+	err = r.MDB.Put(msgid,buf.Bytes(),nil)
+	return
+}
+
+// Called for a sequence of group/number-pairs associated to the article
+// This method may return <nil>!
+func(r *RiLDB) RiBegin(msgid []byte) storage.RiWriter {
+	return &riLDBWriter{RiLDB:r,msgid:msgid}
+}
+
 
 type relobj int
 func(relobj) Release() {}

@@ -157,15 +157,30 @@ type RiHistory struct{
 	MessageId []byte
 }
 
+type RiWriter interface {
+	// Called for the first group/number-pair associated to the article
+	RiWrite(md *Article_MD, rie *RiElement) (err error)
+	
+	// Called for the remaining group/number-pair associated to the article
+	RiWriteMore(md *Article_MD, rie *RiElement) (err error)
+	
+	// Called at after all group/number-pair have been associated.
+	RiCommit() (err error)
+}
+
 /*
 Reverse Index. Maps message-ids to group/number-pairs.
 */
 type RiMethod interface {
 	// Called for the first group/number-pair associated to the article
-	RiWrite(msgid []byte,md *Article_MD, rie *RiElement) (err error)
+	//RiWrite(msgid []byte,md *Article_MD, rie *RiElement) (err error)
 	
 	// Called for the remaining group/number-pair associated to the article
-	RiWriteMore(msgid []byte,md *Article_MD, rie *RiElement) (err error)
+	//RiWriteMore(msgid []byte,md *Article_MD, rie *RiElement) (err error)
+	
+	// Called for a sequence of group/number-pairs associated to the article
+	// This method may return <nil>!
+	RiBegin(msgid []byte) RiWriter
 	
 	// Performs a reverse index lookup: message-id to the first group/number pair.
 	RiLookup(msgid []byte,rie *RiElement) (rel Releaser,err error)
