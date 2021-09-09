@@ -107,7 +107,7 @@ func (c *Client) StatArticle(a *fastnntp.Article) bool {
 func (c *Client) GetArticleInto(a *fastnntp.Article, head, body bool, targ io.Writer) bool {
 	L := c.req(); defer L.release()
 	
-	c.b.writeSplit("GET",a.MessageId,a.Group,a.Number,a.HasId,a.HasNum)
+	c.b.writeSplit("GET",a.MessageId,a.Group,a.Number,a.HasId,a.HasNum,head,body)
 	
 	L.resp()
 	

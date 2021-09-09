@@ -67,6 +67,7 @@ func ljoin(targ []byte, elems... interface{}) []byte {
 		case []byte: targ = append(targ,v...)
 		case string: targ = append(targ,v...)
 		case bool: targ = append(targ,strmap_bool[v])
+		case byte: targ = append(targ,v)
 		case int64: if v<0 { v = 0 }; targ = append(targ,fmt.Sprint(v)...)
 		}
 	}
@@ -85,6 +86,11 @@ func argtoi64(args [][]byte,j int) (i int64) {
 	for _,b := range a {
 		i = (i*10)+int64(b-'0')
 	}
+	return
+}
+func argtob(args [][]byte,j int) (i byte) {
+	a := getarg(args,j)
+	if len(a)>0 { i=a[0] }
 	return
 }
 
@@ -183,6 +189,7 @@ func NewClient(conn io.ReadWriteCloser) (c *Client) {
 type servergls struct {
 	ID [128]byte
 	AR fastnntp.ArticleRange
+	GR fastnntp.Group
 }
 
 type server struct {
