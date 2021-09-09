@@ -26,16 +26,6 @@ package mntpc
 import "io"
 import "github.com/byte-mug/fastnntp"
 
-
-func lam2bool(lam fastnntp.ListActiveMode) (active bool, descr bool) {
-	switch lam {
-	case fastnntp.LAM_Full: active = true; descr = true
-	case fastnntp.LAM_Active: active = true;
-	case fastnntp.LAM_Newsgroups: descr = true
-	}
-	return
-}
-
 func handleGROUP(s *server,args [][]byte) error {
 	var ok bool
 	grp := &s.gls.GR
