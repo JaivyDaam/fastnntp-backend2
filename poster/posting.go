@@ -34,7 +34,6 @@ import (
 	"time"
 	
 	// Temp
-	"github.com/byte-mug/fastnntp-backend2/storage/ovldb"
 	"fmt"
 )
 
@@ -61,7 +60,7 @@ func (*rBuffer) Release() {}
 type StorageWriter struct {
 	Stamp posting.Stamper
 	SM    *storage.StorageManager
-	OV    *ovldb.OvLDB
+	OV    storage.OverviewMethod
 	HIS   storage.HisMethod
 	RI    storage.RiMethod
 }
@@ -184,9 +183,9 @@ func (c *StorageWriter) PerformPost(id []byte, r *fastnntp.DotReader) (rejected 
 		rie.Group = ngrp
 		rie.Num   = ove.Num
 		if first {
-			riw.RiWrite(amd, rie)
+			err = riw.RiWrite(amd, rie)
 		} else {
-			riw.RiWriteMore(amd, rie)
+			err = riw.RiWriteMore(amd, rie)
 		}
 		first = false
 	}
