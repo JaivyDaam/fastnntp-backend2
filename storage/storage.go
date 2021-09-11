@@ -182,6 +182,9 @@ type RiMethod interface {
 	// Performs a reverse index lookup: message-id to the first group/number pair.
 	RiLookup(msgid []byte,rie *RiElement) (rel Releaser,err error)
 	
+	// Performs a reverse index lookup: message-id to all first group/number pairs.
+	RiLookupAll(msgid []byte,rie *RiElement) (rel Cursor,err error)
+	
 	// Query Expired articles. SHOULD return message-ids after their group/number counterparts.
 	RiQueryExpired(ow *time.Time, rih *RiHistory) (cur Cursor, err error)
 	

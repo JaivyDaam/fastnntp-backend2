@@ -87,3 +87,78 @@ func(e *Expirer) ExpireProcess(ctx context.Context, ow *time.Time) error {
 	return nil
 }
 
+// Deletes an article based on it's Message-ID. Will remove it from storage and all groups that contain it.
+func(e *Expirer) CancelMessageId(msgid []byte) error {
+	if e.RI==nil { return ECouldNotQuery }
+	rie := new(storage.RiElement)
+	tok := new(storage.TOKEN)
+	ove := new(storage.OverviewElement)
+	cur,err := e.RI.RiLookupAll(msgid,rie)
+	if cur!=nil { defer cur.Release() }
+	if err!=nil { return err }
+	
+	hasNoTok := true
+	
+	if e.OV!=nil {
+		for cur.Next() {
+			if hasNoTok {
+				if rel,err := e.OV.FetchOne(rie.Group,rie.Num,tok,ove); err==nil {
+					hasNoTok = false
+					if rel!=nil { rel.Release() }
+				}
+			}
+			e.OV.CancelOv(rie.Group,rie.Num)
+		}
+	}
+	if e.HIS!=nil {
+		if hasNoTok {
+			if e.HIS.HisLookup(msgid,tok)==nil {
+				hasNoTok = false
+			}
+		}
+		e.HIS.HisCancel(msgid)
+	}
+	e.RI.RiExpire(msgid)
+	if !hasNoTok && e.SM!=nil {
+		e.SM.Cancel(tok)
+	}
+	return nil
+}
+
+// Deletes an article based on its group and number. Will remove it from storage and all groups that contain it.
+func(e *Expirer) CancelGroupNum(group []byte, num int64) error {
+	if e.RI==nil { return ECouldNotQuery }
+	rie := new(storage.RiElement)
+	tok := new(storage.TOKEN)
+	ove := new(storage.OverviewElement)
+	
+	msgid := make([]byte,0,128)
+	
+	hasNoTok := true
+	{
+		rel,err := e.OV.FetchOne(rie.Group,rie.Num,tok,ove)
+		if err==nil { msgid = append(msgid[:0],ove.MsgId...) }
+		if rel!=nil { rel.Release() }
+		if err!=nil { return err }
+	}
+	
+	cur,err := e.RI.RiLookupAll(msgid,rie)
+	if cur!=nil { defer cur.Release() }
+	if err!=nil { return err }
+	
+	if e.OV!=nil {
+		for cur.Next() {
+			e.OV.CancelOv(rie.Group,rie.Num)
+		}
+	}
+	if e.HIS!=nil {
+		e.HIS.HisCancel(msgid)
+	}
+	e.RI.RiExpire(msgid)
+	
+	if e.SM!=nil {
+		e.SM.Cancel(tok)
+	}
+	return nil
+}
+

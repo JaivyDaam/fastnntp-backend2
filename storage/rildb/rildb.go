@@ -128,6 +128,49 @@ func(r *RiLDB) RiLookup(msgid []byte,rie *storage.RiElement) (rel storage.Releas
 	return
 }
 
+
+type cursorLM struct{
+	rie  *storage.RiElement
+	mdb  *leveldb.DB
+	buf  *bytes.Buffer
+}
+
+func (c *cursorLM) Release() {}
+func (c *cursorLM) refill(key []byte) (error) {
+	val,err := c.mdb.Get(key,nil)
+	c.buf = bytes.NewBuffer(val)
+	return err
+}
+
+func (c *cursorLM) Next() (ok bool) {
+	if c.buf==nil { return }
+	restart:
+	if c.buf==nil { return }
+	var g string
+	var n int64
+	p,_ := fmt.Fscanln(c.buf,&g,&n)
+	switch p {
+	case 0,2:
+		ok = p==2
+	case 1:
+		goto restart
+	}
+	if ok {
+		*c.rie = storage.RiElement{Group:[]byte(g),Num:n}
+		return
+	}
+	return
+}
+
+// Performs a reverse index lookup: message-id to all first group/number pairs.
+func(r *RiLDB) RiLookupAll(msgid []byte,rie *storage.RiElement) (rel storage.Cursor,err error) {
+	cur := &cursorLM{rie,r.MDB,nil}
+	err = cur.refill(msgid)
+	if err==nil { rel = cur }
+	return
+}
+
+
 type cursor struct{
 	iter iterator.Iterator
 	rih  *storage.RiHistory
