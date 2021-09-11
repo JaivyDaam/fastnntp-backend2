@@ -120,6 +120,9 @@ type OverviewMethod interface {
 	// Writes a new Overview line into the database.
 	GroupWriteOv(grp []byte, autonum bool, md *Article_MD, tk *TOKEN, ove *OverviewElement) (err error)
 	
+	// Deletes an Overview line from the database.
+	CancelOv(grp []byte, num int64) (err error)
+	
 	// Initializes a group in the overview-database.
 	InitGroup(grp []byte) (err error)
 }
@@ -244,6 +247,12 @@ func (s *StorageManager) Retrieve(t *TOKEN, sl SMLevel) (a Article_R, rs SMLevel
 	sm := s.Classes[t.Class()]
 	if sm==nil { err = ENotInitialized; return }
 	a,rs,err = sm.Retrieve(t,sl)
+	return
+}
+func (s *StorageManager) Cancel(t *TOKEN) (err error) {
+	sm := s.Classes[t.Class()]
+	if sm==nil { err = ENotInitialized; return }
+	err = sm.Cancel(t)
 	return
 }
 

@@ -302,6 +302,50 @@ func (ov *OvLDB) GroupWriteOv(grp []byte, autonum bool, md *storage.Article_MD, 
 	err = ov.DB.Write(bat,nil)
 	return
 }
+func (ov *OvLDB) CancelOv(grp []byte, num int64) (err error) {
+	defer ov.lock_group(grp)()
+	var mrid,mrec,rid []byte
+	
+	mrid = ov.gstatid(grp)
+	{
+		omrec,err1 := ov.DB.Get(mrid,nil)
+		if err1!=nil { return err1 }
+		anum,low,high,err1 := ov.explodeGstat(omrec)
+		if err1!=nil { return err1 }
+		anum--
+		
+		
+		iter := ov.DB.NewIterator(nil,nil)
+		if low < num {
+			rid = ov.recid(grp,low)
+			if !iter.Seek(rid) {
+				low = high
+			} else {
+				low = ov.recid2num(iter.Key())
+			}
+		}
+		if low == num {
+			rid = ov.recid(grp,num+1)
+			if !iter.Seek(rid) {
+				low = high
+			} else {
+				low = ov.recid2num(iter.Key())
+			}
+		}
+		iter.Release()
+		
+		mrec = ov.joinGstat(make([]byte,32),anum,low,high)
+	}
+	
+	bat := leveldb.MakeBatch(1<<10)
+	rid = ov.recid(grp,num)
+	bat.Delete(rid)
+	bat.Put(mrid,mrec)
+	
+	err = ov.DB.Write(bat,nil)
+	return
+}
+
 
 func (ov *OvLDB) InitGroup(grp []byte) (err error) {
 	defer ov.lock_group(grp)()
